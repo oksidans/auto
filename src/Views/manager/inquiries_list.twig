@@ -1,0 +1,51 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}Menadžerski panel – Upiti{% endblock %}
+
+{% block flash %}
+  {% include 'partials/_flash.twig' %}
+{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h2 style="margin-top:0;">Novi upiti</h2>
+    {% if items|length == 0 %}
+      <p class="muted">Nema novih upita.</p>
+    {% else %}
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Datum</th>
+            <th>Klijent</th>
+            <th>Email</th>
+            <th>Telefon</th>
+            <th>Vozilo</th>
+            <th>Prefer. majstor</th>
+            <th>Akcija</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in items %}
+            <tr>
+              <td>{{ it.id }}</td>
+              <td>{{ it.date_requested }}</td>
+              <td>{{ it.customer_name }}</td>
+              <td>{{ it.contact_email }}</td>
+              <td>{{ it.contact_phone }}</td>
+              <td>{{ it.vehicle_desc }}</td>
+              <td>
+                {% if mechMap[it.preferred_mechanic_id|default(0)] is defined %}
+                  {{ mechMap[it.preferred_mechanic_id] }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td><a class="btn" href="/manager/convert?id={{ it.id }}">Konvertuj</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}Naslovna – Autoservis{% endblock %}
+
+{% block flash %}
+  {% include 'partials/_flash.twig' %}
+{% endblock %}
+
+{% block content %}
+  <p>Današnji datum: <strong>{{ today }}</strong></p>
+
+  {% if availability|length > 0 %}
+    <div class="card" style="margin-bottom:1rem;">
+      <h2 style="margin-top:0;">Dostupnost po majstorima (max 2 termina/dan)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Majstor</th>
+            <th>Zauzeti slotovi</th>
+            <th>Slobodnih slotova</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in availability %}
+            <tr>
+              <td>{{ row.alias }}</td>
+              <td>{{ row.taken }}</td>
+              <td>{{ row.free }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Nema podataka o majstorima.</p>
+  {% endif %}
+
+  {% if logged_in and role == 'user' and not flash %}
+    <div class="card">
+      <h2 style="margin-top:0;">Raspitajte se za termin</h2>
+
+      {% if errors %}
+        <ul class="err">
+          {% for e in errors %}
+            <li>{{ e }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <form method="post" action="/inquiry">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+
+        <label>Ime i prezime *</label>
+        <input type="text" name="name" value="{{ old.name|default('') }}" required>
+
+        <label>Email</label>
+        <input type="email" name="email" value="{{ old.email|default('') }}">
+
+        <label>Telefon</label>
+        <input type="text" name="phone" value="{{ old.phone|default('') }}">
+
+        <label>Vozilo (marka/model/reg. broj)</label>
+        <input type="text" name="vehicle" value="{{ old.veh|default('') }}">
+
+        <label>Izaberite majstora *</label>
+        <select name="mechanic_id" required>
+          <option value="">— odaberite —</option>
+          {% for m in mechanics %}
+            <option value="{{ m.id }}" {% if old.mechanic_id is defined and old.mechanic_id == m.id %}selected{% endif %}>
+              {{ m.alias }}{% if m.free is defined %} (slobodno: {{ m.free }}){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+        {% if errors.mechanic %}<div class="err">{{ errors.mechanic }}</div>{% endif %}
+
+        <label>Napomena</label>
+        <textarea name="notes" rows="4">{{ old.notes|default('') }}</textarea>
+
+        <button type="submit" class="btn">Pošalji upit</button>
+        <p class="muted">* Email ili telefon je obavezan (bar jedno polje).</p>
+      </form>
+    </div>
+  {% else %}
+    {# gost, manager, admin, mechanic — vide samo tabelu i linkove iz topbar-a #}
+  {% endif %}
+{% endblock %}

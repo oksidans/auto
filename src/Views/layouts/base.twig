@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Autoservis{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% block head_extra %}{% endblock %}
+  <style>
+    :root {
+      --bg: #fafafa; --card: #fff; --border:#ddd; --muted:#666;
+      --okbg:#e9ffe9; --okb:#9bcf9b; --ok:#2d662d;
+      --err:#b33;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; background: var(--bg); }
+    .container { max-width: 1024px; margin: 0 auto; }
+    .card { background: var(--card); border:1px solid var(--border); border-radius: 10px; padding: 1rem; }
+    .grid { display: grid; gap: 1rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: .5rem; text-align: left; }
+    th { background: #eee; }
+    .muted { color: var(--muted); font-size: .95em; }
+    .err { color: var(--err); }
+    .success-message { background: var(--okbg); border:1px solid var(--okb); color: var(--ok); padding: 1em; border-radius: 8px; }
+    label { display:block; margin-top:.8rem; }
+    input, select, textarea { width:100%; padding:.5rem; border:1px solid #ccc; border-radius:6px; }
+    button, .btn {
+      display:inline-block; padding:.55rem .9rem; border:1px solid #888; border-radius:8px; background:#fff; text-decoration:none; color:#111;
+    }
+    .btn + .btn { margin-left:.5rem; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+    .topbar h1 { margin:0; font-size:1.5rem; }
+    .right { text-align:right; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    {% include 'partials/_topbar.twig' %}
+    {% block flash %}{% endblock %}
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

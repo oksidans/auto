@@ -1,0 +1,33 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}Registracija – Autoservis{% endblock %}
+
+{% block content %}
+  <div class="card" style="max-width:520px; margin:0 auto;">
+    <h2 style="margin-top:0;">Registracija</h2>
+
+    <form method="post" action="/register">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+
+      <label>Ime i prezime</label>
+      <input type="text" name="full_name" value="{{ old.full_name|default('') }}" required>
+      {% if errors.full_name %}<div class="err">{{ errors.full_name }}</div>{% endif %}
+
+      <label style="margin-top:.8rem;">Email</label>
+      <input type="email" name="email" value="{{ old.email|default('') }}" required>
+      {% if errors.email %}<div class="err">{{ errors.email }}</div>{% endif %}
+
+      <label style="margin-top:.8rem;">Lozinka</label>
+      <input type="password" name="password" required>
+      {% if errors.password %}<div class="err">{{ errors.password }}</div>{% endif %}
+
+      <label style="margin-top:.8rem;">Ponovi lozinku</label>
+      <input type="password" name="password_confirm" required>
+      {% if errors.password_confirm %}<div class="err">{{ errors.password_confirm }}</div>{% endif %}
+
+      <button type="submit" class="btn" style="margin-top:1rem;">Kreiraj nalog</button>
+    </form>
+
+    <p class="muted" style="margin-top:.75rem;">Već imaš nalog? <a href="/login">Prijavi se</a></p>
+  </div>
+{% endblock %}

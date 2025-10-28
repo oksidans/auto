@@ -1,0 +1,19 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}Admin – Izveštaji{% endblock %}
+
+{% block content %}
+  <div class="grid">
+    <div class="card">
+      <h2 style="margin-top:0;">Upiti (Inquiries)</h2>
+      <a class="btn" href="/admin/reports/inquiries.xlsx">Preuzmi Excel (.xlsx)</a>
+      <a class="btn" href="/admin/reports/inquiries.pdf">Preuzmi PDF (.pdf)</a>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;">Termini (Appointments)</h2>
+      <a class="btn" href="/admin/reports/appointments.xlsx">Preuzmi Excel (.xlsx)</a>
+      <a class="btn" href="/admin/reports/appointments.pdf">Preuzmi PDF (.pdf)</a>
+    </div>
+  </div>
+{% endblock %}

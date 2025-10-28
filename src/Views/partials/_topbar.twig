@@ -1,0 +1,18 @@
+<div class="topbar">
+  <h1>{% block brand %}Autoservis{% endblock %}</h1>
+  <div class="right">
+    {% if logged_in %}
+      {% if role == 'manager' %}
+        <a class="btn" href="/manager/inquiries">Menadžerski panel</a>
+      {% elseif role == 'admin' %}
+        <a class="btn" href="/admin/reports">Admin panel</a>
+      {% endif %}
+      <form method="post" action="/logout" style="display:inline; margin-left:.75rem;">
+        <button type="submit" class="btn">Odjavi se</button>
+      </form>
+    {% else %}
+      <a class="btn" href="/login?next=/">Prijavi se</a>
+      <a class="btn" href="/register">Registracija</a>
+    {% endif %}
+  </div>
+</div>

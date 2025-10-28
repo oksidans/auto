@@ -1,0 +1,1 @@
+[2025-10-28T19:13:13+00:00] Autoservis.WARNING: Route not found {"method":"GET","uri":"/favicon.ico"} {"url":"/favicon.ico","ip":"::1","http_method":"GET","server":"localhost","referrer":"http://localhost:8080/","uid":"9d06176"}

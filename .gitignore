@@ -1,0 +1,8 @@
+# Composer
+/vendor
+composer.phar
+
+# Logovi i keš
+*.cache
+.idea/
+.vscode/
