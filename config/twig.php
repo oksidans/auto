@@ -3,22 +3,37 @@ declare(strict_types=1);
 
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
+use Twig\Extension\DebugExtension;
 
 return static function (array $config): Environment {
-    $loader = new FilesystemLoader($config['paths']['views']);
+
+    $viewsPath = __DIR__ . '/../src/Views';
+    $loader = new FilesystemLoader($viewsPath);
+
 
     $twig = new Environment($loader, [
-        'cache' => false, // za prod: $config['paths']['cache']
-        'debug' => $config['debug'],
-        'autoescape' => 'html',
+        'cache' => false,
+        'debug' => (bool)($config['debug'] ?? false),
+        'strict_variables' => false,
     ]);
 
-    if ($config['debug']) {
-        $twig->enableDebug();
+    if (!empty($config['debug'])) {
+        $twig->addExtension(new DebugExtension());
     }
 
-    // globalne promenljive, po želji
-    $twig->addGlobal('app_env', $config['env']);
+
+    $loggedIn = isset($_SESSION['user_id']);
+    $role     = $_SESSION['role'] ?? null;
+    $email    = $_SESSION['email'] ?? null;
+
+    $twig->addGlobal('logged_in', $loggedIn);
+    $twig->addGlobal('role', $role);
+    $twig->addGlobal('current_user_email', $email);
+
+
+    if (isset($_GET['ok'])) {
+        $twig->addGlobal('flash', $_GET['ok']);
+    }
 
     return $twig;
 };

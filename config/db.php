@@ -16,7 +16,7 @@ return static function (array $config): PDO {
         PDO::ATTR_EMULATE_PREPARES   => false,
     ]);
 
-    // kolacija na nivou konekcije (opciono)
+
     $pdo->query("SET NAMES '{$config['db']['charset']}' COLLATE '{$config['db']['collation']}'");
 
     return $pdo;

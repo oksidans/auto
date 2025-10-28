@@ -15,21 +15,21 @@ return static function (array $config): Logger {
 
     $logger = new Logger('Autoservis');
 
-    // Rotacija logova: jedan fajl dnevno, čuvaj 14 dana
+
     $handler = new RotatingFileHandler(
         $config['paths']['logs'] . '/app.log',
         14,
         $config['debug'] ? Level::Debug : Level::Info,
-        true, // bubble
-        0664  // permissions
+        true,
+        0664
     );
 
-    // Format: [timestamp] Channel.LEVEL: Message {context} {extra}
+
     $format = "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n";
-    $formatter = new LineFormatter($format, "c", true, true); // ISO8601, allowInlineLineBreaks, ignoreEmptyContextAndExtra
+    $formatter = new LineFormatter($format, "c", true, true);
     $handler->setFormatter($formatter);
 
-    // Procesori: jedinstveni ID zahteva i web info (IP, URL, metoda)
+
     $logger->pushProcessor(new UidProcessor());
     $logger->pushProcessor(new WebProcessor());
 
