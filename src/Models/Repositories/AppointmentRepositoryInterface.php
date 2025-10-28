@@ -8,7 +8,7 @@ use Miki\Autoservis\Models\Domain\Appointment;
 interface AppointmentRepositoryInterface
 {
     public function findById(int $id): ?Appointment;
-    public function countForMechanicDate(int $mechanicId, string $date): int; // koliko je zauzeto
+    public function countForMechanicDate(int $mechanicId, string $date): int;
     public function existsSlot(int $mechanicId, string $date, int $slot): bool;
-    public function create(Appointment $appointment): int; // vraća ID
+    public function create(Appointment $appointment): int;
 }

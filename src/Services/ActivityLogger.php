@@ -9,9 +9,7 @@ final class ActivityLogger
 {
     public function __construct(private PDO $pdo) {}
 
-    /**
-     * Upis u activity_log; ne prekida tok aplikacije ako log padne.
-     */
+
     public function log(?int $userId, string $action, ?string $entityType = null, ?int $entityId = null, array $details = []): void
     {
         try {
@@ -33,7 +31,7 @@ final class ActivityLogger
                 ':details' => $json,
             ]);
         } catch (\Throwable $e) {
-            // tiho ignoriši (ne želimo da logiranje sruši UX)
+
         }
     }
 }

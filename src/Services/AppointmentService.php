@@ -15,7 +15,7 @@ final class AppointmentService
     /**
      * Konvertuj upit u termin: bira prvi slobodan slot (1 pa 2) za zadatog majstora i datum.
      * Ako nema slobodnog — baca izuzetak.
-     * @return array{appointment_id:int, slot:int}  <-- vraćamo i slot da logovi budu informativniji
+     * @return array{appointment_id:int, slot:int}
      */
     public function convertInquiryToAppointment(int $inquiryId, string $date, int $mechanicId, int $managerUserId): array
     {
@@ -30,16 +30,16 @@ final class AppointmentService
             throw new \RuntimeException('Upit nije u statusu za konverziju.');
         }
 
-        // 1) nađi ili kreiraj customer-a (po email/telefon)
+
         $customerId = $this->ensureCustomer($inq->customerName(), $inq->contactEmail(), $inq->contactPhone());
 
-        // 2) izaberi slot (1 ili 2)
+
         $slot = $this->pickFreeSlot($appRepo, $mechanicId, $date);
         if ($slot === null) {
             throw new \RuntimeException('Nema slobodnih slotova za izabranog majstora na taj datum.');
         }
 
-        // 3) kreiraj termin
+
         $appointment = new Appointment(
             id: null,
             date: $date,
@@ -54,10 +54,10 @@ final class AppointmentService
         try {
             $appId = $appRepo->create($appointment);
 
-            // 4) markiraj inquiry kao konvertovan
+
             $inqRepo->markConverted($inquiryId, $appId);
 
-            // 5) activity log (DB)
+
             (new ActivityLogger($this->pdo))->log(
                 $managerUserId,
                 'inquiry.convert',
@@ -68,7 +68,7 @@ final class AppointmentService
 
             $this->pdo->commit();
 
-            // Vraćamo i slot da controller može da upiše bogat file-log
+
             return ['appointment_id' => $appId, 'slot' => $slot];
 
         } catch (\Throwable $e) {
@@ -89,7 +89,7 @@ final class AppointmentService
 
     private function ensureCustomer(string $name, ?string $email, ?string $phone): int
     {
-        // VAŽNO: ne koristiti iste named parametre više puta (HY093)
+
         $sqlFind = "
             SELECT id FROM customers
             WHERE ((:e1 IS NOT NULL AND email = :e2)

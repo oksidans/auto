@@ -13,16 +13,16 @@ return [
         '/register'             => [AuthController::class, 'showRegister'],
         '/health'               => fn() => 'OK',
 
-        //Admin
+
         '/admin/reports'                 => [AdminController::class, 'reportsIndex'],
         '/admin/reports/inquiries.xlsx'  => [AdminController::class, 'exportInquiriesXlsx'],
         '/admin/reports/appointments.xlsx'=>[AdminController::class, 'exportAppointmentsXlsx'],
         '/admin/reports/inquiries.pdf'   => [AdminController::class, 'exportInquiriesPdf'],
-        '/admin/reports/appointments.pdf'=> [AdminController::class, 'exportAppointmentsPdf'],        
+        '/admin/reports/appointments.pdf'=> [AdminController::class, 'exportAppointmentsPdf'],
 
-        // manager
+
         '/manager/inquiries'    => [ManagerController::class, 'inquiries'],
-        '/manager/convert'      => [ManagerController::class, 'showConvert'], // ?id=123
+        '/manager/convert'      => [ManagerController::class, 'showConvert'],
     ],
     'POST' => [
         '/inquiry'              => [GuestController::class, 'sendInquiry'],
@@ -30,7 +30,7 @@ return [
         '/register'             => [AuthController::class, 'register'],
         '/logout'               => [AuthController::class, 'logout'],
 
-        // manager
+
         '/manager/convert'      => [ManagerController::class, 'convert'],
     ],
 ];

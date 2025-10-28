@@ -30,13 +30,13 @@ final class GuestController
     {
         $today = new \DateTimeImmutable('today');
 
-        // Tabela dostupnosti (uvek)
+
         $availability = [];
         if ($this->pdo) {
             $availability = (new AvailabilityService($this->pdo))->forDate($today);
         }
 
-        // Lista majstora za <select> (preferiraj one sa slobodnim slotom)
+
         $mechanicsForSelect = [];
         if ($this->pdo) {
             $withFree = array_filter($availability, fn($r) => (int)($r['free'] ?? 0) > 0);
@@ -53,7 +53,7 @@ final class GuestController
         $loggedIn = isset($_SESSION['user_id']);
         $role = $_SESSION['role'] ?? null;
 
-        // CSRF samo ako će forma da se prikaže (tj. role == user)
+
         $csrf = null;
         if ($loggedIn && $role === 'user') {
             $csrf = bin2hex(random_bytes(32));
@@ -75,13 +75,13 @@ final class GuestController
 
     public function sendInquiry(): void
     {
-        // Dozvoljeno samo korisniku (user), ne i menadžeru/adminu/mehaničaru
+
         if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? null) !== 'user') {
             header('Location: /?ok=Za%20slanje%20upita%20potreban%20je%20korisni%C4%8Dki%20nalog.');
             exit;
         }
 
-        // CSRF provera
+
         $ok = isset($_POST['csrf'], $_SESSION['csrf']) && hash_equals($_SESSION['csrf'], $_POST['csrf']);
         unset($_SESSION['csrf']);
         if (!$ok) {
@@ -104,7 +104,7 @@ final class GuestController
         if ($email === '' && $phone === '') { $errors['contact'] = 'Email ili telefon je obavezan.'; }
         if ($mechId <= 0) { $errors['mechanic'] = 'Izaberite majstora.'; }
 
-        // Validacija da majstor postoji i aktivan je
+
         if (!$errors && $this->pdo) {
             $st = $this->pdo->prepare('SELECT id FROM mechanics WHERE id = :id AND is_active = 1 LIMIT 1');
             $st->execute([':id' => $mechId]);
@@ -114,7 +114,7 @@ final class GuestController
         }
 
         if ($errors) {
-            // Ponovo prikaži formu sa greškama i starim vrednostima
+
             $availability = $this->pdo ? (new AvailabilityService($this->pdo))->forDate(new \DateTimeImmutable('today')) : [];
             $withFree = array_filter($availability, fn($r) => (int)($r['free'] ?? 0) > 0);
             $source = $withFree ?: $availability;
@@ -142,7 +142,7 @@ final class GuestController
             return;
         }
 
-        // Insert u inquiries
+
         if ($this->pdo) {
             $st = $this->pdo->prepare(
                 'INSERT INTO inquiries
@@ -161,7 +161,7 @@ final class GuestController
 
             $inqId = (int)$this->pdo->lastInsertId();
 
-            // DB log (audit)
+
             $this->activity?->log(
                 $_SESSION['user_id'] ?? null,
                 'inquiry.create',
@@ -170,11 +170,11 @@ final class GuestController
                 ['preferred_mechanic_id' => $mechId]
             );
 
-            // File log (Monolog)
+
             $this->log->inquiryCreated($inqId, $mechId);
         }
 
-        // PRG redirect sa flash porukom
+
         header('Location: /?ok=Hvala%20na%20upitu!%20Javi%C4%87emo%20Vam%20se%20uskoro.');
         exit;
     }

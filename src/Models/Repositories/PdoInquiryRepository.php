@@ -50,7 +50,7 @@ final class PdoInquiryRepository implements InquiryRepositoryInterface
             ':p' => $a['contact_phone'],
             ':v' => $a['vehicle_desc'],
             ':m' => $a['preferred_mechanic_id'],
-            ':t' => $a['notes'] ?? null, // napomena nije u entitetu; možeš dodati polje ako želiš
+            ':t' => $a['notes'] ?? null,
             ':s' => $a['status'] ?? 'new',
         ]);
         return (int)$this->pdo->lastInsertId();

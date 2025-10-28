@@ -7,12 +7,12 @@ final class Appointment
 {
     public function __construct(
         private ?int $id,
-        private string $date,              // 'Y-m-d'
-        private int $slot,                 // 1 ili 2
+        private string $date,
+        private int $slot,
         private int $mechanicId,
         private int $customerId,
         private ?int $vehicleId = null,
-        private string $status = 'approved' // pending|approved|in_service|ready|closed
+        private string $status = 'approved'
     ) {
         $this->guard();
     }

@@ -23,29 +23,29 @@ final class AuthController
         $this->log = new LoggerService($this->logger);
     }
 
-    // GET /login
+
     public function showLogin(): string
     {
-        // CSRF
+
         $csrf = bin2hex(random_bytes(32));
         $_SESSION['csrf'] = $csrf;
 
-        // next param iz query-ja (npr. /login?next=/manager/inquiries)
+
         $next = $_GET['next'] ?? '/';
 
         return $this->twig->render('auth/login.twig', [
             'csrf'   => $csrf,
             'next'   => $next,
-            'errors' => [],               // tvoj twig očekuje errors.*
-            'old'    => ['email' => ''],  // i old.email
-            'success'=> $_GET['success'] ?? null, // ako dođe iz register redirecta
+            'errors' => [],
+            'old'    => ['email' => ''],
+            'success'=> $_GET['success'] ?? null,
         ]);
     }
 
-    // POST /login
+
     public function login(): void
     {
-        // CSRF
+
         $ok = isset($_POST['csrf'], $_SESSION['csrf']) && hash_equals($_SESSION['csrf'], $_POST['csrf']);
         unset($_SESSION['csrf']);
         if (!$ok) {
@@ -87,7 +87,7 @@ final class AuthController
             return;
         }
 
-        // uspešan login
+
         session_regenerate_id(true);
         $_SESSION['user_id'] = (int)$user['id'];
         $_SESSION['role']    = $user['role'];
@@ -100,7 +100,7 @@ final class AuthController
         exit;
     }
 
-    // GET /register
+
     public function showRegister(): string
     {
         $csrf = bin2hex(random_bytes(32));
@@ -113,10 +113,10 @@ final class AuthController
         ]);
     }
 
-    // POST /register
+
     public function register(): void
     {
-        // CSRF
+
         $ok = isset($_POST['csrf'], $_SESSION['csrf']) && hash_equals($_SESSION['csrf'], $_POST['csrf']);
         unset($_SESSION['csrf']);
         if (!$ok) {
@@ -125,7 +125,7 @@ final class AuthController
             return;
         }
 
-        // tvoj twig koristi nazive polja: full_name, email, password, password_confirm
+
         $fullName = trim($_POST['full_name'] ?? '');
         $email    = trim($_POST['email'] ?? '');
         $pass     = $_POST['password'] ?? '';
@@ -137,7 +137,7 @@ final class AuthController
         if ($pass === '')     { $errors['password']  = 'Lozinka je obavezna.'; }
         if ($pass !== $pass2) { $errors['password_confirm'] = 'Lozinke se ne poklapaju.'; }
 
-        // provera postojanja email-a
+
         if (!$errors) {
             $stmt = $this->pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
             $stmt->execute(['email' => $email]);
@@ -147,7 +147,7 @@ final class AuthController
         }
 
         if ($errors) {
-            // ponovno prikaži formu sa greškama i starim vrednostima
+
             $csrf = bin2hex(random_bytes(32));
             $_SESSION['csrf'] = $csrf;
             echo $this->twig->render('auth/register.twig', [
@@ -168,7 +168,7 @@ final class AuthController
             'name'  => $fullName,
         ]);
 
-        // nakon registracije prikaži success na login formi
+
         header('Location: /login?success=Registracija%20uspe%C5%A1na%2C%20prijavite%20se.');
         exit;
     }

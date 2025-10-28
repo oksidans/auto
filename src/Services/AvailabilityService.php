@@ -9,22 +9,19 @@ final class AvailabilityService
 {
     public function __construct(private PDO $pdo) {}
 
-    /**
-     * Vrati listu majstora sa zauzetim i slobodnim slotovima za dati dan.
-     * Svaki majstor ima max 2 slota dnevno.
-     */
+
     public function forDate(\DateTimeInterface $date): array
     {
         $d = $date->format('Y-m-d');
 
-        // Dohvati sve aktivne majstore
+
         $mechanics = $this->pdo->query(
             "SELECT id, alias FROM mechanics WHERE is_active = 1 ORDER BY alias"
         )->fetchAll();
 
         if (!$mechanics) return [];
 
-        // Zauzeti slotovi po majstoru za dan D
+
         $stmt = $this->pdo->prepare(
             "SELECT mechanic_id, COUNT(id) AS taken
                FROM appointments
@@ -37,7 +34,7 @@ final class AvailabilityService
             $takenByMech[(int)$row['mechanic_id']] = (int)$row['taken'];
         }
 
-        // Sastavi rezultat
+
         $result = [];
         foreach ($mechanics as $m) {
             $taken = $takenByMech[(int)$m['id']] ?? 0;

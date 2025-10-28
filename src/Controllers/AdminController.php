@@ -62,11 +62,11 @@ final class AdminController
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Inquiries');
 
-        // header
+
         $headers = ['ID', 'Date Requested', 'Customer', 'Email', 'Phone', 'Vehicle', 'Preferred Mechanic ID', 'Status', 'Created At'];
         $sheet->fromArray($headers, null, 'A1');
 
-        // data
+
         $r = 2;
         foreach ($rows as $row) {
             $sheet->fromArray([
@@ -83,7 +83,7 @@ final class AdminController
             $r++;
         }
 
-        // autosize
+
         foreach (range('A', 'I') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
@@ -98,7 +98,7 @@ final class AdminController
 
         // log
         $this->activity->log((int)$_SESSION['user_id'], 'report.export', 'inquiries', null, ['format' => 'xlsx']);
-        $this->log->inquiryCreated(0, null); // nebitno, ali možemo imati poseban logger method za export
+        $this->log->inquiryCreated(0, null);
         exit;
     }
 
@@ -193,7 +193,7 @@ final class AdminController
         $mpdf = new Mpdf(['tempDir' => sys_get_temp_dir()]);
         $mpdf->WriteHTML($html);
         $filename = 'inquiries-' . date('Ymd-His') . '.pdf';
-        $mpdf->Output($filename, 'D'); // force download
+        $mpdf->Output($filename, 'D');
 
         $this->activity->log((int)$_SESSION['user_id'], 'report.export', 'inquiries', null, ['format' => 'pdf']);
         exit;

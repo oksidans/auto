@@ -38,7 +38,7 @@ final class ManagerController
         $repo = new PdoInquiryRepository($this->pdo);
         $items = $repo->listByStatus('new', 50, 0);
 
-        // (opciono) mapa ID->alias za prikaz u listi
+
         $mechMap = [];
         foreach ($this->pdo->query('SELECT id, alias FROM mechanics WHERE is_active=1') as $row) {
             $mechMap[(int)$row['id']] = $row['alias'];
@@ -82,7 +82,7 @@ final class ManagerController
     {
         $this->ensureManager();
 
-        // CSRF
+
         $ok = isset($_POST['csrf'], $_SESSION['csrf']) && hash_equals($_SESSION['csrf'], $_POST['csrf']);
         unset($_SESSION['csrf']);
         if (!$ok) {
@@ -105,7 +105,7 @@ final class ManagerController
             $service = new AppointmentService($this->pdo);
             $res = $service->convertInquiryToAppointment($inquiryId, $date, $mechanicId, (int)$_SESSION['user_id']);
 
-            // File log (Monolog) — sada imamo i slot
+
             $this->log->inquiryConverted(
                 $inquiryId,
                 $res['appointment_id'],

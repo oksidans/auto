@@ -7,13 +7,13 @@ final class Inquiry
 {
     public function __construct(
         private ?int $id,
-        private string $dateRequested,              // 'Y-m-d'
+        private string $dateRequested,
         private string $customerName,
         private ?string $contactEmail,
         private ?string $contactPhone,
         private ?string $vehicleDesc,
         private ?int $preferredMechanicId,
-        private string $status = 'new',             // new|contacted|converted|closed
+        private string $status = 'new',
         private ?string $createdAt = null,
         private ?int $convertedToAppointmentId = null,
     ) {
@@ -34,7 +34,7 @@ final class Inquiry
         }
     }
 
-    // Getteri
+
     public function id(): ?int { return $this->id; }
     public function dateRequested(): string { return $this->dateRequested; }
     public function customerName(): string { return $this->customerName; }
@@ -46,7 +46,7 @@ final class Inquiry
     public function createdAt(): ?string { return $this->createdAt; }
     public function convertedToAppointmentId(): ?int { return $this->convertedToAppointmentId; }
 
-    // Mutacije unutar domena (kontrolisane)
+
     public function markContacted(): void { $this->status = 'contacted'; }
     public function markClosed(): void    { $this->status = 'closed'; }
     public function markConverted(int $appointmentId): void
@@ -55,7 +55,7 @@ final class Inquiry
         $this->convertedToAppointmentId = $appointmentId;
     }
 
-    // Mapiranja
+
     public static function fromArray(array $r): self
     {
         return new self(
