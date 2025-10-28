@@ -1,36 +1,26 @@
 <?php
-declare(strict_types=1);
-
 use Miki\Autoservis\Controllers\GuestController;
 use Miki\Autoservis\Controllers\AuthController;
 use Miki\Autoservis\Controllers\ManagerController;
 use Miki\Autoservis\Controllers\AdminController;
 
-return [
-    'GET' => [
-        '/'                     => [GuestController::class, 'index'],
-        '/login'                => [AuthController::class, 'showLogin'],
-        '/register'             => [AuthController::class, 'showRegister'],
-        '/health'               => fn() => 'OK',
+// Gost i korisnici
+$routes['GET']['/']             = [GuestController::class, 'index'];
+$routes['POST']['/inquiry']     = [GuestController::class, 'storeInquiry'];
 
+// Autentifikacija
+$routes['GET']['/login']        = [AuthController::class, 'showLogin'];
+$routes['POST']['/login']       = [AuthController::class, 'login'];
+$routes['GET']['/register']     = [AuthController::class, 'showRegister'];
+$routes['POST']['/register']    = [AuthController::class, 'register'];
+$routes['POST']['/logout']      = [AuthController::class, 'logout'];
 
-        '/admin/reports'                 => [AdminController::class, 'reportsIndex'],
-        '/admin/reports/inquiries.xlsx'  => [AdminController::class, 'exportInquiriesXlsx'],
-        '/admin/reports/appointments.xlsx'=>[AdminController::class, 'exportAppointmentsXlsx'],
-        '/admin/reports/inquiries.pdf'   => [AdminController::class, 'exportInquiriesPdf'],
-        '/admin/reports/appointments.pdf'=> [AdminController::class, 'exportAppointmentsPdf'],
+// Menadžer
+$routes['GET']['/manager/inquiries']        = [ManagerController::class, 'listInquiries'];
+$routes['GET']['/manager/inquiries/convert'] = [ManagerController::class, 'showConvertForm'];
+$routes['POST']['/manager/inquiries/convert'] = [ManagerController::class, 'convertInquiry'];
 
-
-        '/manager/inquiries'    => [ManagerController::class, 'inquiries'],
-        '/manager/convert'      => [ManagerController::class, 'showConvert'],
-    ],
-    'POST' => [
-        '/inquiry'              => [GuestController::class, 'sendInquiry'],
-        '/login'                => [AuthController::class, 'login'],
-        '/register'             => [AuthController::class, 'register'],
-        '/logout'               => [AuthController::class, 'logout'],
-
-
-        '/manager/convert'      => [ManagerController::class, 'convert'],
-    ],
-];
+// Administrator
+$routes['GET']['/admin/reports']                     = [AdminController::class, 'index'];
+$routes['GET']['/admin/reports/inquiries']           = [AdminController::class, 'exportInquiries'];
+$routes['GET']['/admin/reports/appointments']        = [AdminController::class, 'exportAppointments'];

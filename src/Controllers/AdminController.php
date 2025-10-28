@@ -3,243 +3,120 @@ declare(strict_types=1);
 
 namespace Miki\Autoservis\Controllers;
 
+use Miki\Autoservis\Services\ReportService;
+use Miki\Autoservis\Services\PdfService;
+use Miki\Autoservis\Services\XlsxService;
 use Twig\Environment;
+use Monolog\Logger;
 use PDO;
-use Miki\Autoservis\Services\LoggerService;
-use Miki\Autoservis\Services\ActivityLogger;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use Mpdf\Mpdf;
 
-final class AdminController
+class AdminController
 {
-    private LoggerService $log;
-    private ActivityLogger $activity;
+    private Environment $twig;
+    private Logger $logger;
+    private PDO $pdo;
+    private ReportService $reportService;
 
-    public function __construct(
-        private Environment $twig,
-        private \Monolog\Logger $logger,
-        private array $config,
-        private PDO $pdo
-    ) {
-        $this->log = new LoggerService($this->logger);
-        $this->activity = new ActivityLogger($this->pdo);
-    }
-
-    private function ensureAdmin(): void
+    public function __construct(Environment $twig, Logger $logger, array $config, PDO $pdo)
     {
-        if (!isset($_SESSION['user_id'], $_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-            http_response_code(403);
-            echo '403 Forbidden';
-            exit;
-        }
+        $this->twig = $twig;
+        $this->logger = $logger;
+        $this->pdo = $pdo;
+        $this->reportService = new ReportService($pdo);
     }
 
-    public function reportsIndex(): string
+    public function index(): void
     {
-        $this->ensureAdmin();
-
-        return $this->twig->render('admin/reports.twig', [
-            'today' => (new \DateTimeImmutable('today'))->format('Y-m-d'),
-        ]);
+        echo $this->twig->render('admin/reports.twig');
     }
 
-    // ============ XLSX EXPORT ============
-
-    public function exportInquiriesXlsx(): void
+    // ✅ NOVO: fleksibilni export za inquiries
+    public function exportInquiries(): void
     {
-        $this->ensureAdmin();
+        $format = strtolower($_GET['format'] ?? '');
 
-        $rows = $this->pdo->query("
-            SELECT id, date_requested, customer_name, contact_email, contact_phone,
-                   vehicle_desc, preferred_mechanic_id, status, created_at
-            FROM inquiries
-            ORDER BY created_at DESC
-            LIMIT 1000
-        ")->fetchAll(PDO::FETCH_ASSOC);
-
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Inquiries');
-
-
-        $headers = ['ID', 'Date Requested', 'Customer', 'Email', 'Phone', 'Vehicle', 'Preferred Mechanic ID', 'Status', 'Created At'];
-        $sheet->fromArray($headers, null, 'A1');
-
-
-        $r = 2;
-        foreach ($rows as $row) {
-            $sheet->fromArray([
-                $row['id'],
-                $row['date_requested'],
-                $row['customer_name'],
-                $row['contact_email'],
-                $row['contact_phone'],
-                $row['vehicle_desc'],
-                $row['preferred_mechanic_id'],
-                $row['status'],
-                $row['created_at'],
-            ], null, 'A' . $r);
-            $r++;
+        switch ($format) {
+            case 'pdf':
+                $this->exportInquiriesPdf();
+                break;
+            case 'xlsx':
+                $this->exportInquiriesXlsx();
+                break;
+            default:
+                http_response_code(400);
+                echo 'Bad Request: missing or invalid format';
         }
-
-
-        foreach (range('A', 'I') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-
-        $filename = 'inquiries-' . date('Ymd-His') . '.xlsx';
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Cache-Control: max-age=0');
-
-        $writer = new Xlsx($spreadsheet);
-        $writer->save('php://output');
-
-        // log
-        $this->activity->log((int)$_SESSION['user_id'], 'report.export', 'inquiries', null, ['format' => 'xlsx']);
-        $this->log->inquiryCreated(0, null);
-        exit;
     }
 
-    public function exportAppointmentsXlsx(): void
+    // ✅ NOVO: fleksibilni export za appointments
+    public function exportAppointments(): void
     {
-        $this->ensureAdmin();
+        $format = strtolower($_GET['format'] ?? '');
 
-        $rows = $this->pdo->query("
-            SELECT a.id, a.date, a.slot, a.status,
-                   m.alias AS mechanic, c.name AS customer, v.plate_number, v.make, v.model
-            FROM appointments a
-            JOIN mechanics m ON m.id = a.mechanic_id
-            JOIN customers c ON c.id = a.customer_id
-            LEFT JOIN vehicles v ON v.id = a.vehicle_id
-            ORDER BY a.date DESC, a.id DESC
-            LIMIT 2000
-        ")->fetchAll(PDO::FETCH_ASSOC);
-
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Appointments');
-
-        $headers = ['ID', 'Date', 'Slot', 'Mechanic', 'Customer', 'Plate', 'Make', 'Model', 'Status'];
-        $sheet->fromArray($headers, null, 'A1');
-
-        $r = 2;
-        foreach ($rows as $row) {
-            $sheet->fromArray([
-                $row['id'],
-                $row['date'],
-                $row['slot'],
-                $row['mechanic'],
-                $row['customer'],
-                $row['plate_number'],
-                $row['make'],
-                $row['model'],
-                $row['status'],
-            ], null, 'A' . $r);
-            $r++;
+        switch ($format) {
+            case 'pdf':
+                $this->exportAppointmentsPdf();
+                break;
+            case 'xlsx':
+                $this->exportAppointmentsXlsx();
+                break;
+            default:
+                http_response_code(400);
+                echo 'Bad Request: missing or invalid format';
         }
-
-        foreach (range('A', 'I') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-
-        $filename = 'appointments-' . date('Ymd-His') . '.xlsx';
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Cache-Control: max-age=0');
-
-        $writer = new Xlsx($spreadsheet);
-        $writer->save('php://output');
-
-        $this->activity->log((int)$_SESSION['user_id'], 'report.export', 'appointments', null, ['format' => 'xlsx']);
-        exit;
     }
 
-    // ============ PDF EXPORT ============
+    // === PDF/XLSX izvozi postoje kao i ranije ===
 
     public function exportInquiriesPdf(): void
     {
-        $this->ensureAdmin();
+        $data = $this->reportService->getAllInquiries();
+        $pdf = new PdfService();
+        $file = $pdf->generateInquiriesReport($data);
+        $this->logger->info('Admin exported inquiries PDF', ['count' => count($data)]);
+        $this->sendDownload($file, 'inquiries.pdf', 'application/pdf');
+    }
 
-        $rows = $this->pdo->query("
-            SELECT id, date_requested, customer_name, contact_email, contact_phone,
-                   vehicle_desc, preferred_mechanic_id, status, created_at
-            FROM inquiries
-            ORDER BY created_at DESC
-            LIMIT 1000
-        ")->fetchAll(PDO::FETCH_ASSOC);
-
-        $html = '<h2>Inquiries</h2><table width="100%" border="1" cellspacing="0" cellpadding="4">
-            <thead><tr>
-              <th>ID</th><th>Date</th><th>Customer</th><th>Email</th><th>Phone</th><th>Vehicle</th><th>Pref. Mechanic</th><th>Status</th><th>Created</th>
-            </tr></thead><tbody>';
-
-        foreach ($rows as $r) {
-            $html .= '<tr>'.
-              '<td>'.htmlspecialchars((string)$r['id']).'</td>'.
-              '<td>'.htmlspecialchars((string)$r['date_requested']).'</td>'.
-              '<td>'.htmlspecialchars((string)$r['customer_name']).'</td>'.
-              '<td>'.htmlspecialchars((string)($r['contact_email'] ?? '')).'</td>'.
-              '<td>'.htmlspecialchars((string)($r['contact_phone'] ?? '')).'</td>'.
-              '<td>'.htmlspecialchars((string)($r['vehicle_desc'] ?? '')).'</td>'.
-              '<td>'.htmlspecialchars((string)($r['preferred_mechanic_id'] ?? '')).'</td>'.
-              '<td>'.htmlspecialchars((string)$r['status']).'</td>'.
-              '<td>'.htmlspecialchars((string)$r['created_at']).'</td>'.
-            '</tr>';
-        }
-        $html .= '</tbody></table>';
-
-        $mpdf = new Mpdf(['tempDir' => sys_get_temp_dir()]);
-        $mpdf->WriteHTML($html);
-        $filename = 'inquiries-' . date('Ymd-His') . '.pdf';
-        $mpdf->Output($filename, 'D');
-
-        $this->activity->log((int)$_SESSION['user_id'], 'report.export', 'inquiries', null, ['format' => 'pdf']);
-        exit;
+    public function exportInquiriesXlsx(): void
+    {
+        $data = $this->reportService->getAllInquiries();
+        $xlsx = new XlsxService();
+        $file = $xlsx->generateInquiriesReport($data);
+        $this->logger->info('Admin exported inquiries XLSX', ['count' => count($data)]);
+        $this->sendDownload($file, 'inquiries.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }
 
     public function exportAppointmentsPdf(): void
     {
-        $this->ensureAdmin();
+        $data = $this->reportService->getAllAppointments();
+        $pdf = new PdfService();
+        $file = $pdf->generateAppointmentsReport($data);
+        $this->logger->info('Admin exported appointments PDF', ['count' => count($data)]);
+        $this->sendDownload($file, 'appointments.pdf', 'application/pdf');
+    }
 
-        $rows = $this->pdo->query("
-            SELECT a.id, a.date, a.slot, a.status,
-                   m.alias AS mechanic, c.name AS customer, v.plate_number, v.make, v.model
-            FROM appointments a
-            JOIN mechanics m ON m.id = a.mechanic_id
-            JOIN customers c ON c.id = a.customer_id
-            LEFT JOIN vehicles v ON v.id = a.vehicle_id
-            ORDER BY a.date DESC, a.id DESC
-            LIMIT 2000
-        ")->fetchAll(PDO::FETCH_ASSOC);
+    public function exportAppointmentsXlsx(): void
+    {
+        $data = $this->reportService->getAllAppointments();
+        $xlsx = new XlsxService();
+        $file = $xlsx->generateAppointmentsReport($data);
+        $this->logger->info('Admin exported appointments XLSX', ['count' => count($data)]);
+        $this->sendDownload($file, 'appointments.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
 
-        $html = '<h2>Appointments</h2><table width="100%" border="1" cellspacing="0" cellpadding="4">
-            <thead><tr>
-              <th>ID</th><th>Date</th><th>Slot</th><th>Mechanic</th><th>Customer</th><th>Plate</th><th>Make</th><th>Model</th><th>Status</th>
-            </tr></thead><tbody>';
-
-        foreach ($rows as $r) {
-            $html .= '<tr>'.
-              '<td>'.htmlspecialchars((string)$r['id']).'</td>'.
-              '<td>'.htmlspecialchars((string)$r['date']).'</td>'.
-              '<td>'.htmlspecialchars((string)$r['slot']).'</td>'.
-              '<td>'.htmlspecialchars((string)$r['mechanic']).'</td>'.
-              '<td>'.htmlspecialchars((string)$r['customer']).'</td>'.
-              '<td>'.htmlspecialchars((string)($r['plate_number'] ?? '')).'</td>'.
-              '<td>'.htmlspecialchars((string)($r['make'] ?? '')).'</td>'.
-              '<td>'.htmlspecialchars((string)($r['model'] ?? '')).'</td>'.
-              '<td>'.htmlspecialchars((string)$r['status']).'</td>'.
-            '</tr>';
+    private function sendDownload(string $filePath, string $downloadName, string $mime): void
+    {
+        if (!is_file($filePath)) {
+            http_response_code(404);
+            echo "File not found: $downloadName";
+            return;
         }
-        $html .= '</tbody></table>';
 
-        $mpdf = new Mpdf(['tempDir' => sys_get_temp_dir()]);
-        $mpdf->WriteHTML($html);
-        $filename = 'appointments-' . date('Ymd-His') . '.pdf';
-        $mpdf->Output($filename, 'D');
-
-        $this->activity->log((int)$_SESSION['user_id'], 'report.export', 'appointments', null, ['format' => 'pdf']);
-        exit;
+        header('Content-Description: File Transfer');
+        header('Content-Type: ' . $mime);
+        header('Content-Disposition: attachment; filename="' . $downloadName . '"');
+        header('Content-Length: ' . filesize($filePath));
+        readfile($filePath);
+        unlink($filePath); // obriši temp fajl
     }
 }
