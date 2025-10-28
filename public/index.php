@@ -1,10 +1,11 @@
 <?php
 declare(strict_types=1);
+
+// public/index.php
 session_start();
 
-
+// 1) Konfig i servisi
 $config = require __DIR__ . '/../config/app.php';
-
 
 $makeTwig   = require __DIR__ . '/../config/twig.php';
 $twig       = $makeTwig($config);
@@ -15,25 +16,25 @@ $logger     = $makeLogger($config);
 $makePdo = require __DIR__ . '/../config/db.php';
 $pdo     = $makePdo($config);
 
-
+// 2) Rute
 $routes = require __DIR__ . '/../src/Routes/web.php';
 
+// 3) HTTP metoda i putanja
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$uriRaw = $_SERVER['REQUEST_URI'] ?? '/';
+$path   = rtrim(parse_url($uriRaw, PHP_URL_PATH) ?? '/', '/');
+$path   = $path === '' ? '/' : $path;
 
-[$method, $uri] = [
-    $_SERVER['REQUEST_METHOD'] ?? 'GET',
-    rtrim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/', '/') ?: '/'
-];
-
-$handler = $routes[$method][$uri] ?? null;
+// 4) Dispatcher
+$handler = $routes[$method][$path] ?? null;
 
 try {
     if (!$handler) {
         http_response_code(404);
         echo '404 Not Found';
-        $logger->warning('Route not found', ['method' => $method, 'uri' => $uri]);
+        $logger->warning('Route not found', ['method' => $method, 'path' => $path]);
         exit;
     }
-
 
     if (is_array($handler)) {
         [$class, $action] = $handler;
@@ -42,16 +43,14 @@ try {
         exit;
     }
 
-
     if (is_callable($handler)) {
-        echo $handler();
+        echo $handler($twig, $logger, $config);
         exit;
     }
 
-
     http_response_code(500);
+    $logger->error('Invalid route handler', ['type' => gettype($handler)]);
     echo '500 Server Error';
-    $logger->error('Invalid route handler type', ['handler' => gettype($handler)]);
 } catch (\Throwable $e) {
     http_response_code(500);
     $logger->error('Unhandled exception', [

@@ -3,120 +3,145 @@ declare(strict_types=1);
 
 namespace Miki\Autoservis\Controllers;
 
-use Miki\Autoservis\Services\ReportService;
-use Miki\Autoservis\Services\PdfService;
-use Miki\Autoservis\Services\XlsxService;
-use Twig\Environment;
-use Monolog\Logger;
 use PDO;
+use Twig\Environment as Twig;
+use Monolog\Logger;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Mpdf\Mpdf;
 
 class AdminController
 {
-    private Environment $twig;
-    private Logger $logger;
-    private PDO $pdo;
-    private ReportService $reportService;
+    public function __construct(
+        private Twig $twig,
+        private Logger $logger,
+        private array $config,
+        private PDO $pdo
+    ) {}
 
-    public function __construct(Environment $twig, Logger $logger, array $config, PDO $pdo)
+    public function reportsIndex(): string
     {
-        $this->twig = $twig;
-        $this->logger = $logger;
-        $this->pdo = $pdo;
-        $this->reportService = new ReportService($pdo);
+        // Prikaži linkove na exporte:
+        // /admin/reports/inquiries?format=pdf|xlsx
+        // /admin/reports/appointments?format=pdf|xlsx
+        return $this->twig->render('admin/reports.twig', []);
     }
 
-    public function index(): void
-    {
-        echo $this->twig->render('admin/reports.twig');
-    }
-
-    // ✅ NOVO: fleksibilni export za inquiries
-    public function exportInquiries(): void
+    public function exportInquiries(): string
     {
         $format = strtolower($_GET['format'] ?? '');
+        $rows = $this->fetchInquiries();
 
-        switch ($format) {
-            case 'pdf':
-                $this->exportInquiriesPdf();
-                break;
-            case 'xlsx':
-                $this->exportInquiriesXlsx();
-                break;
-            default:
-                http_response_code(400);
-                echo 'Bad Request: missing or invalid format';
+        if ($format === 'xlsx') {
+            $this->outputXlsx('inquiries', ['ID','Datum','Ime','Email','Telefon','Vozilo','Napomena','Status'], $rows);
+            return '';
         }
+        if ($format === 'pdf') {
+            $this->outputPdf('Inquiries', ['ID','Datum','Ime','Email','Telefon','Vozilo','Napomena','Status'], $rows);
+            return '';
+        }
+
+        // Ako nema format parametra, vrati UI stranu ili 400
+        http_response_code(400);
+        return 'Bad Request: missing format (pdf|xlsx)';
     }
 
-    // ✅ NOVO: fleksibilni export za appointments
-    public function exportAppointments(): void
+    public function exportAppointments(): string
     {
         $format = strtolower($_GET['format'] ?? '');
+        $rows = $this->fetchAppointments();
 
-        switch ($format) {
-            case 'pdf':
-                $this->exportAppointmentsPdf();
-                break;
-            case 'xlsx':
-                $this->exportAppointmentsXlsx();
-                break;
-            default:
-                http_response_code(400);
-                echo 'Bad Request: missing or invalid format';
+        if ($format === 'xlsx') {
+            $this->outputXlsx('appointments', ['ID','Datum','Slot','Majstor','Klijent','Vozilo','Status'], $rows);
+            return '';
         }
-    }
-
-    // === PDF/XLSX izvozi postoje kao i ranije ===
-
-    public function exportInquiriesPdf(): void
-    {
-        $data = $this->reportService->getAllInquiries();
-        $pdf = new PdfService();
-        $file = $pdf->generateInquiriesReport($data);
-        $this->logger->info('Admin exported inquiries PDF', ['count' => count($data)]);
-        $this->sendDownload($file, 'inquiries.pdf', 'application/pdf');
-    }
-
-    public function exportInquiriesXlsx(): void
-    {
-        $data = $this->reportService->getAllInquiries();
-        $xlsx = new XlsxService();
-        $file = $xlsx->generateInquiriesReport($data);
-        $this->logger->info('Admin exported inquiries XLSX', ['count' => count($data)]);
-        $this->sendDownload($file, 'inquiries.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    }
-
-    public function exportAppointmentsPdf(): void
-    {
-        $data = $this->reportService->getAllAppointments();
-        $pdf = new PdfService();
-        $file = $pdf->generateAppointmentsReport($data);
-        $this->logger->info('Admin exported appointments PDF', ['count' => count($data)]);
-        $this->sendDownload($file, 'appointments.pdf', 'application/pdf');
-    }
-
-    public function exportAppointmentsXlsx(): void
-    {
-        $data = $this->reportService->getAllAppointments();
-        $xlsx = new XlsxService();
-        $file = $xlsx->generateAppointmentsReport($data);
-        $this->logger->info('Admin exported appointments XLSX', ['count' => count($data)]);
-        $this->sendDownload($file, 'appointments.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    }
-
-    private function sendDownload(string $filePath, string $downloadName, string $mime): void
-    {
-        if (!is_file($filePath)) {
-            http_response_code(404);
-            echo "File not found: $downloadName";
-            return;
+        if ($format === 'pdf') {
+            $this->outputPdf('Appointments', ['ID','Datum','Slot','Majstor','Klijent','Vozilo','Status'], $rows);
+            return '';
         }
 
-        header('Content-Description: File Transfer');
-        header('Content-Type: ' . $mime);
-        header('Content-Disposition: attachment; filename="' . $downloadName . '"');
-        header('Content-Length: ' . filesize($filePath));
-        readfile($filePath);
-        unlink($filePath); // obriši temp fajl
+        http_response_code(400);
+        return 'Bad Request: missing format (pdf|xlsx)';
+    }
+
+    // ===== Helpers =====
+
+    private function fetchInquiries(): array
+    {
+        $sql = "SELECT id, date_requested, customer_name, contact_email, contact_phone, vehicle_desc, notes, status
+                FROM inquiries ORDER BY id DESC";
+        $stmt = $this->pdo->query($sql);
+        return $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+    }
+
+    private function fetchAppointments(): array
+    {
+        $sql = "SELECT a.id, a.date, a.slot, m.alias AS mechanic, c.name AS customer,
+                       v.plate_number AS vehicle, a.status
+                  FROM appointments a
+             LEFT JOIN mechanics m ON m.id = a.mechanic_id
+             LEFT JOIN customers c ON c.id = a.customer_id
+             LEFT JOIN vehicles  v ON v.id = a.vehicle_id
+              ORDER BY a.id DESC";
+        $stmt = $this->pdo->query($sql);
+        return $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+    }
+
+    private function outputXlsx(string $baseName, array $headers, array $rows): void
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Header
+        foreach ($headers as $i => $h) {
+            $sheet->setCellValueByColumnAndRow($i+1, 1, $h);
+        }
+        // Rows
+        $r = 2;
+        foreach ($rows as $row) {
+            $c = 1;
+            foreach ($row as $val) {
+                $sheet->setCellValueByColumnAndRow($c++, $r, (string)$val);
+            }
+            $r++;
+        }
+
+        // Output
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="'.$baseName.'.xlsx"');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        // na Windowsu zna da pomogne isključivanje disk cache-a:
+        // $writer->setPreCalculateFormulas(false);
+        $writer->save('php://output');
+        exit;
+    }
+
+    private function outputPdf(string $title, array $headers, array $rows): void
+    {
+        // mPDF zna da traži temp dir (posebno na Windowsu)
+        $mpdf = new Mpdf([
+            'tempDir' => $this->config['paths']['tmp'] ?? sys_get_temp_dir(),
+        ]);
+
+        $html = '<h2>'.htmlspecialchars($title).'</h2><table border="1" cellspacing="0" cellpadding="6"><tr>';
+        foreach ($headers as $h) {
+            $html .= '<th>'.htmlspecialchars($h).'</th>';
+        }
+        $html .= '</tr>';
+
+        foreach ($rows as $row) {
+            $html .= '<tr>';
+            foreach ($row as $val) {
+                $html .= '<td>'.htmlspecialchars((string)$val).'</td>';
+            }
+            $html .= '</tr>';
+        }
+        $html .= '</table>';
+
+        $mpdf->WriteHTML($html);
+        $mpdf->Output($title . '.pdf', 'D'); // force download
+        exit;
     }
 }
