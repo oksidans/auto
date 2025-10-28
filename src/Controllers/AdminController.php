@@ -21,9 +21,7 @@ class AdminController
 
     public function reportsIndex(): string
     {
-        // Prikaži linkove na exporte:
-        // /admin/reports/inquiries?format=pdf|xlsx
-        // /admin/reports/appointments?format=pdf|xlsx
+
         return $this->twig->render('admin/reports.twig', []);
     }
 
@@ -41,7 +39,7 @@ class AdminController
             return '';
         }
 
-        // Ako nema format parametra, vrati UI stranu ili 400
+
         http_response_code(400);
         return 'Bad Request: missing format (pdf|xlsx)';
     }
@@ -112,15 +110,14 @@ class AdminController
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 
         $writer = new Xlsx($spreadsheet);
-        // na Windowsu zna da pomogne isključivanje disk cache-a:
-        // $writer->setPreCalculateFormulas(false);
+
         $writer->save('php://output');
         exit;
     }
 
     private function outputPdf(string $title, array $headers, array $rows): void
     {
-        // mPDF zna da traži temp dir (posebno na Windowsu)
+
         $mpdf = new Mpdf([
             'tempDir' => $this->config['paths']['tmp'] ?? sys_get_temp_dir(),
         ]);
@@ -141,7 +138,7 @@ class AdminController
         $html .= '</table>';
 
         $mpdf->WriteHTML($html);
-        $mpdf->Output($title . '.pdf', 'D'); // force download
+        $mpdf->Output($title . '.pdf', 'D');
         exit;
     }
 }

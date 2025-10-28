@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-// public/index.php
+
 session_start();
 
-// 1) Konfig i servisi
+
 $config = require __DIR__ . '/../config/app.php';
 
 $makeTwig   = require __DIR__ . '/../config/twig.php';
@@ -16,16 +16,16 @@ $logger     = $makeLogger($config);
 $makePdo = require __DIR__ . '/../config/db.php';
 $pdo     = $makePdo($config);
 
-// 2) Rute
+
 $routes = require __DIR__ . '/../src/Routes/web.php';
 
-// 3) HTTP metoda i putanja
+
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $uriRaw = $_SERVER['REQUEST_URI'] ?? '/';
 $path   = rtrim(parse_url($uriRaw, PHP_URL_PATH) ?? '/', '/');
 $path   = $path === '' ? '/' : $path;
 
-// 4) Dispatcher
+
 $handler = $routes[$method][$path] ?? null;
 
 try {

@@ -10,19 +10,19 @@ return [
     'GET' => [
         '/'                           => [GuestController::class, 'index'],
 
-        // Auth
+
         '/login'                      => [AuthController::class, 'showLogin'],
         '/register'                   => [AuthController::class, 'showRegister'],
         '/health'                     => fn() => 'OK',
 
-        // Manager
+
         '/manager/inquiries'          => [ManagerController::class, 'inquiries'],
         '/manager/convert'            => [ManagerController::class, 'showConvert'],
 
-        // Admin (report UI + unified export)
+
         '/admin/reports'              => [AdminController::class, 'reportsIndex'],
-        '/admin/reports/inquiries'    => [AdminController::class, 'exportInquiries'],     // ?format=pdf|xlsx
-        '/admin/reports/appointments' => [AdminController::class, 'exportAppointments'],  // ?format=pdf|xlsx
+        '/admin/reports/inquiries'    => [AdminController::class, 'exportInquiries'],
+        '/admin/reports/appointments' => [AdminController::class, 'exportAppointments'],
     ],
     'POST' => [
         '/inquiry'                    => [GuestController::class, 'sendInquiry'],
